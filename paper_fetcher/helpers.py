@@ -44,28 +44,36 @@ def get_pub_details(web_address:str)->dict:
 
     result_dict['title'] = soup.find_all('meta', {"name":"citation_title"})[0]['content']
     result_dict['journal'] = soup.find_all('meta', {"name":"citation_journal_title"})[0]['content']
-    result_dict['year'] = soup.find('time', {"class":"citation-year"}).text
+
+    if soup.find('time', {"class":"citation-year"}) is not None:
+        result_dict['year'] = soup.find('time', {"class":"citation-year"}).text
+    else:
+        None
     result_dict['authors'] = []
+
+    if len(soup.find_all('div', {"class":"authors-list"}))>0:
  
-    auth_list = soup.find_all('div', {"class":"authors-list"})[0]
+        auth_list = soup.find_all('div', {"class":"authors-list"})[0]
     
-    info = []
-    for th in auth_list.children:
-        if isinstance(th, Tag):
-            info.append(th)
+        info = []
+        for th in auth_list.children:
+            if isinstance(th, Tag):
+                info.append(th)
     
-    for elem in info:
+        for elem in info:
 
-        auth_name = elem.find('a', {"class":"full-name"}).text
-        if elem.find('a', {"class":"affiliation-link"}) is not None:
-            auth_aff = elem.find('a', {"class":"affiliation-link"})['title']
-        else:
-            auth_aff = None
-        result_dict["authors"].append(
-            (auth_name, auth_aff)
-        )
+            auth_name = elem.find('a', {"class":"full-name"}).text
+            if elem.find('a', {"class":"affiliation-link"}) is not None:
+                auth_aff = elem.find('a', {"class":"affiliation-link"})['title']
+            else:
+                auth_aff = None
+            result_dict["authors"].append(
+                (auth_name, auth_aff)
+            )
 
-    return result_dict
+        return result_dict
+    
+    else: return result_dict
 
 def arg_parser()->dict:
 
