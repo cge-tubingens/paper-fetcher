@@ -36,17 +36,36 @@ def execute_main():
 
     df_pubs = pd.DataFrame(columns=['PubMed ID', 'Journal', 'Year', 'Title'])
 
+    df_authors = pd.DataFrame(columns=['Author', 'Affiliation', 'Country', 'PubMed ID'])
+
     count=0
     for pub_dict in lst:
-        df_pubs.loc[count, 'PubMed_ID'] = pub_dict['pubmed_id']
+        df_pubs.loc[count, 'PubMed ID'] = pub_dict['pubmed_id']
         df_pubs.loc[count, 'Journal'] = pub_dict['journal']
         df_pubs.loc[count, 'Year'] = pub_dict['year']
         df_pubs.loc[count, 'Title'] = pub_dict['title']
 
+        for auth_tup in pub_dict['authors']:
+            row = len(df_authors)
+            df_authors.loc[row,'Author'] = auth_tup[0]
+            df_authors.loc[row,'PubMed ID'] = pub_dict['pubmed_id']
+
+            if auth_tup[0] is None:
+                df_authors.loc[row,'Affiliation'] = None
+                df_authors.loc[row, 'Country'] = None
+            else:
+
+                affiliation = auth_tup[1].split(';')[0]
+
+                df_authors.loc[row,'Affiliation'] = affiliation.split(',')[0]
+                df_authors.loc[row, 'Country'] = affiliation.splti(',')[-1]
+
     path_to_file = os.path.join(ouput_folder, 'publications_info.txt')
     path_to_pubs = os.path.join(ouput_folder, 'publications.csv')
+    path_to_auth = os.path.join(ouput_folder, 'authors.csv')
 
     df_pubs.to_csv(path_to_pubs, index=False)
+    df_authors.to_csv(path_to_auth, index=False)
 
     with open(path_to_file, 'w') as file:
         file.write(json.dumps(lst))
