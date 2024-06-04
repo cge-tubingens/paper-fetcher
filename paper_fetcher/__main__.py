@@ -16,11 +16,13 @@ def execute_main():
 
     pubmed_ids = get_all_pubmed_ids(search_term)
 
+    print(f"{len(pubmed_ids)} PubMed IDs has been fetched")
+
     lst = []
 
     for id in pubmed_ids:
 
-        time.sleep(1)
+        time.sleep(0.5)
 
         path_web = f"https://pubmed.ncbi.nlm.nih.gov/{id}"
 
