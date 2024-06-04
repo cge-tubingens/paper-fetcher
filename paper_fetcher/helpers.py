@@ -1,5 +1,5 @@
 
-
+import argparse
 import requests
 from xml.etree import ElementTree
 import csv
@@ -67,3 +67,19 @@ def get_pub_details(web_address:str)->dict:
         )
 
     return result_dict
+
+def arg_parser()->dict:
+
+    # define parser
+    parser = argparse.ArgumentParser(description='Adresses to configuration files')
+
+    # parameters of quality control
+    parser.add_argument('--search-terms', type=str, nargs='?', default=None, const=None, help='Keyword to search in PubMed')
+
+    # path to data and names of files
+    parser.add_argument('--output-folder', type=str, nargs='?', default=None, const=None, help='Folder where the data will be stored')
+
+    # parse args and turn into dict
+    args = parser.parse_args()
+
+    return args
