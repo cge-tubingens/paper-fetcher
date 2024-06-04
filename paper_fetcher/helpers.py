@@ -2,7 +2,6 @@
 import argparse
 import requests
 from xml.etree import ElementTree
-import csv
 
 from bs4.element import Tag
 from bs4 import BeautifulSoup
