@@ -4,6 +4,8 @@ import os
 import time
 import json
 
+import pandas as pd
+
 from helpers import arg_parser, get_all_pubmed_ids, get_pub_details
 
 def execute_main():
@@ -32,7 +34,19 @@ def execute_main():
 
         lst.append(info)
 
+    df_pubs = pd.DataFrame(columns=['PubMed ID', 'Journal', 'Year', 'Title'])
+
+    count=0
+    for pub_dict in lst:
+        df_pubs.loc[count, 'PubMed_ID'] = pub_dict['pubmed_id']
+        df_pubs.loc[count, 'Journal'] = pub_dict['journal']
+        df_pubs.loc[count, 'Year'] = pub_dict['year']
+        df_pubs.loc[count, 'Title'] = pub_dict['title']
+
     path_to_file = os.path.join(ouput_folder, 'publications_info.txt')
+    path_to_pubs = os.path.join(ouput_folder, 'publications.csv')
+
+    df_pubs.to_csv(path_to_pubs, index=False)
 
     with open(path_to_file, 'w') as file:
         file.write(json.dumps(lst))
