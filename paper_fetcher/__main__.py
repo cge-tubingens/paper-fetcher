@@ -6,7 +6,7 @@ import json
 
 import pandas as pd
 
-from helpers import arg_parser, get_all_pubmed_ids, get_pub_details
+from utils import fetch_publication_details, save_to_csv, arg_parser, get_all_pubmed_ids
 
 def execute_main():
 
@@ -18,57 +18,11 @@ def execute_main():
 
     pubmed_ids = get_all_pubmed_ids(search_term)
 
-    print(f"{len(pubmed_ids)} PubMed IDs has been fetched")
+    print(f"Total PubMed IDs retrieved: {len(pubmed_ids)}")
+    
+    publications = fetch_publication_details(pubmed_ids)
 
-    lst = []
-
-    for id in pubmed_ids:
-
-        time.sleep(0.5)
-
-        path_web = f"https://pubmed.ncbi.nlm.nih.gov/{id}"
-
-        info = get_pub_details(path_web)
-
-        info['pubmed_id'] = id
-
-        lst.append(info)
-
-    df_pubs = pd.DataFrame(columns=['PubMed ID', 'Journal', 'Year', 'Title'])
-
-    df_authors = pd.DataFrame(columns=['Author', 'Affiliation', 'Country', 'PubMed ID'])
-
-    count=0
-    for pub_dict in lst:
-        df_pubs.loc[count, 'PubMed ID'] = pub_dict['pubmed_id']
-        df_pubs.loc[count, 'Journal'] = pub_dict['journal']
-        df_pubs.loc[count, 'Year'] = pub_dict['year']
-        df_pubs.loc[count, 'Title'] = pub_dict['title']
-
-        for auth_tup in pub_dict['authors']:
-            row = len(df_authors)
-            df_authors.loc[row,'Author'] = auth_tup[0]
-            df_authors.loc[row,'PubMed ID'] = pub_dict['pubmed_id']
-
-            if auth_tup[0] is None:
-                df_authors.loc[row,'Affiliation'] = None
-                df_authors.loc[row, 'Country'] = None
-            else:
-
-                affiliation = auth_tup[1].split(';')[0]
-
-                df_authors.loc[row,'Affiliation'] = affiliation.split(',')[0]
-                df_authors.loc[row, 'Country'] = affiliation.splti(',')[-1]
-
-    path_to_file = os.path.join(ouput_folder, 'publications_info.txt')
-    path_to_pubs = os.path.join(ouput_folder, 'publications.csv')
-    path_to_auth = os.path.join(ouput_folder, 'authors.csv')
-
-    df_pubs.to_csv(path_to_pubs, index=False)
-    df_authors.to_csv(path_to_auth, index=False)
-
-    with open(path_to_file, 'w') as file:
-        file.write(json.dumps(lst))
+    save_to_csv(publications, output_folder=ouput_folder)
 
 if __name__ == "__main__":
     execute_main()
