@@ -1,3 +1,4 @@
+import re
 
 from sklearn.base import TransformerMixin, BaseEstimator
 
@@ -117,3 +118,30 @@ class FinalSymbolsDropper(BaseEstimator, TransformerMixin):
                 return no_space
         else:
             return None 
+
+class ElectronicAddressDropper(BaseEstimator, TransformerMixin):
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    def get_feature_names_out(self):
+        pass
+
+    def fit(self, X:pd.DataFrame, y=None):
+        return self
+    
+    def transform(self, X:pd.DataFrame, y=None)->pd.DataFrame:
+
+        X_copy= X.copy()
+        col = X_copy.columns[0]
+
+        X_copy[col] = X_copy[col].apply(lambda x: self.dropper(x))
+
+        return X_copy
+
+    @staticmethod
+    def dropper(string:str)->str:
+
+        if string is None: return None
+        else:
+            return re.sub(r'\.[^:]*:', '', string)
