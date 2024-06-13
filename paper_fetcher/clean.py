@@ -72,6 +72,81 @@ class RemoveTwitter(TransformerMixin, BaseEstimator):
         if string is None: return None
         else:
             return re.sub(r'//.*?\s', '', string)
+        
+class StatesFixerUS(TransformerMixin, BaseEstimator):
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    def get_feature_names_out(self):
+        pass
+
+    def fit(self, X:pd.DataFrame, y=None):
+        return self
+    
+    def transform(self, X:pd.DataFrame, y=None)->pd.DataFrame:
+
+        X_copy= X.copy()
+        cols = X_copy.columns
+        
+        for col in cols:
+
+            X_copy[col] = X_copy[col].apply(lambda x: self.fixer(x))
+
+        return X_copy
+    
+    @staticmethod
+    def fixer(string:str)->str:
+
+        if string is None: return None
+
+        states_codes = [
+            "AL", "AK", "AZ", "AR", "AS", "CA", "CO", "CT", "DE", "DC", "FL", "GA", "GU", "HI", "ID", "IL", 
+            "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", 
+            "NJ", "NM", "NY", "NC", "ND", "WY", "OH", "OK", "OR", "PA", "PR", "RI", "SC", "SD", "TN", "TX",
+            "UT", "VT", "VA", "WA", "WV", "WI"
+        ]
+
+        for code in states_codes:
+            if f", {code}" in string:
+                return string.replace(f", {code}", f" {code}")
+            if f"; {code}" in string:
+                return string.replace(f"; {code}", f" {code}")
+            elif f",{code}" in string:
+                return string.replace(f",{code}", f" {code}")
+            elif f";{code}" in string:
+                return string.replace(f";{code}", f" {code}")
+            
+        return string
+        
+class RemoveApos(TransformerMixin, BaseEstimator):
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    def get_feature_names_out(self):
+        pass
+
+    def fit(self, X:pd.DataFrame, y=None):
+        return self
+    
+    def transform(self, X:pd.DataFrame, y=None)->pd.DataFrame:
+
+        X_copy= X.copy()
+        cols = X_copy.columns
+        
+        for col in cols:
+
+            X_copy[col] = X_copy[col].apply(lambda x: self.dropper(x))
+
+        return X_copy
+    
+    @staticmethod
+    def dropper(string:str)->str:
+
+        if string is None: return None
+        else:
+            return string.replace("' ", " ")
     
 class EmailDropper(BaseEstimator, TransformerMixin):
 
@@ -339,7 +414,14 @@ class StringsRemover(BaseEstimator, TransformerMixin):
             "These authors share senior authorship", "These four authors contributed equally to this article",
             "These two authors contributed equally to this article as lead authors and supervised the work",
             "G. Bergamini and R. Pepperkok contributed equally to this article as lead authors and supervised the work",
-            "Feipeng Cui and Yu Sun contributed equally to this work", "Deceased: Dr. Lumeng died on June"
+            "Feipeng Cui and Yu Sun contributed equally to this work", "Deceased: Dr. Lumeng died on June",
+            "Contributed equally and are considered to be joint last author",
+            "Contributed equally to this article as lead authors and supervised the work", "Lead contact",
+            "Ph.D. Program of Cancer Research and Drug Discovery", "Joint first authors", "Joint senior authors",
+            "Both authors contributed equally", "P.O. Box", "PO Box", "was a researcher in law at HeLEX until July",
+            "Dr Sotoodehnia is supported by NIH grant by AHA grant and by the Laughlin Family",
+            "Equal first/senior", "Group leader of Angiogenesis and Tissue Engineering", "Contributed equally",
+            "Mr. De Craen suddenly passed away January", "and are considered to be joint last author"
         ]
 
         for substring in to_drop: 
@@ -347,7 +429,6 @@ class StringsRemover(BaseEstimator, TransformerMixin):
                 return string.replace(substring, '')
             
         return string
-
 
 class CountrySelector(BaseEstimator, TransformerMixin):
 
@@ -376,6 +457,48 @@ class CountrySelector(BaseEstimator, TransformerMixin):
         else:
             res = string.split(',')[-1]
             return res.lstrip()
+
+class SmallWordsRemover(BaseEstimator, TransformerMixin):
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    def get_feature_names_out(self):
+        pass
+
+    def fit(self, X:pd.DataFrame, y=None):
+        return self
+    
+    def transform(self, X:pd.DataFrame, y=None)->pd.DataFrame:
+
+        X_copy= X.copy()
+        col = X_copy.columns[0]
+
+        X_copy[col] = X_copy[col].apply(lambda x: self.dropper(x))
+
+        return X_copy
+    
+    @staticmethod
+    def dropper(string:str)->str:
+
+        if string is None: return None
+
+        to_drop = [
+            "The ", " and ", "the "
+        ]
+
+        for substring in to_drop: 
+            if substring in string:
+                return string.replace(substring, ' ').lstrip()
+            
+        to_none = [
+            'and', ' ', '', 'https:', 'to this paper', 'to this work'
+        ]
+            
+        for word in to_none:
+            if string==word: return None
+            
+        return string
 
 class USA(BaseEstimator, TransformerMixin):
 
@@ -425,14 +548,32 @@ class USA(BaseEstimator, TransformerMixin):
             "Maryland", "Denver", "Iowa", "South Carolina", "Palo Alto", "Florida", "Rhode Island",
             "Colorado", "Michigan", "Tucson", "Phoenix", "Pennsylvania", "Vermont", "Wisconsin", "Oklahoma",
             "New Mexico", "Ann Arbor", "Nashville", "Oregon", "Delaware", "Honolulu", "Texas", "Puerto Rico",
-            "Cleveland OH", "Indianapolis", "Providence RI", "Masschusetts", "Connecticut", "Stanford University",
+            "Cleveland OH", "Clevel OH", "Indianapolis", "Providence RI", "Masschusetts", "Connecticut", "Stanford University",
             "Hawai'i", "Cambridge MA", "U.S.A", "Tulane", "Yale University", "Brigham and Women's Hospital",
             "Northeastern University", "Columbia University", "Duke University", "Yale School of Medicine", 
             "Albert Einstein College of Medicine", "Stanford Medical School", "American Cancer Society",
             "Cedars-Sinai", "Chicago", "District of Columbia", "Icahn School of Medicine", "Cincinnati",
             "Keck USC School of Medicine", "Harvard Medical School", "Calico Life Sciences", "Calico", "Icahn",
             "Minneapolis", "Calif", "Albuquerque", "Moffitt Cancer Center", "Charles Bronfman Institute",
-            "SWOG Statistical Center", "Penn-CHOP Lung Biology Institute"
+            "SWOG Statistical Center", "Penn-CHOP Lung Biology Institute", "USC Norris", "Eden Prairie",
+            "Emory University", "Washington University", "Stanford", "Charlottesville", "Bethesda MD",
+            "Claremont CA", "Collegeville PA", "Columbia SC", "Columbus OH", "Corona CA", "Dallas TX",
+            "Danville PA", "Davis CA", "Decatur GA", "Louisville KY", "Brown University", "Virginia Tech",
+            "Grove IL", "Duarte CA", "East Lansing MI", "East Lansing", "Englewood CO", "Evanston IL",
+            "Farmington CT", "Farmington", "Fort Collins CO", "Fort Worth TX", "Ames IA", "Aurora CO",
+            "Amherst MA", "Berkeley CA", "Blood Institute MA", "Boulder CO", "Boulder", "Rhode Isl", "Harvard MA",
+            "Bronx NY", "Brookline MA", "Brownsville TX", "Chapel Hill NC", "Charleston SC", "Charlestown MA",
+            "Burlington VT", "Charlotte NC", "Chevy Chase MD", "Framingham MA", "Frederick MD", "Fremont CA",
+            "Gainesville FL", "Gaithersburg MD", "Glen Echo MD", "Gr Rapids MI", "Hagerstown MD", "Hanover NH",
+            "Hartford CT", "Harrison NJ", "Harvard", "Buffalo NY", "Durham NC", "Irvine CA", "Ithaca NY",
+            "Jackson MS", "Jacksonville FL", "Kalamazoo MI", "Kansas City KS", "King of Prussia PA", 
+            "La Jolla CA", "La Jolla", "Lancaster PA", "Las Vegas NV", "Lewisburg PA", "Lexington KY",
+            "Winston Salem NC", "Winston-Salem NC", "Washington DC", "Waco TX", "San Diego", "Washington WA",
+            "UAB Lung Imaging Lab", "Torrance CA", "Tarrytown NY", "Tampa FL", "Syracuse NY", "Stony Brook NY",
+            "Stamford CT", "St Louis MO", "St. Louis MO", "Sioux Center IA", "Severna Park MD", "Scottsdale AZ",
+            "Santa Cruz CA", "San Antonio TX", "Sacramento CA", "Grand Rapids MI", "Maywood IL", "Medford MA",
+            "Memphis TN", "Milwaukee WI", "Morristown NJ", "Mountain View CA", "New Brunswick NJ", 
+            "New Hyde Park NY", "North Haven CT", "Norwood MA", "Oakland CA", "Portland ME", "Portland OR"
         ]
 
         for loc in usa_locs:
@@ -463,14 +604,22 @@ class Netherlands(BaseEstimator, TransformerMixin):
     @staticmethod
     def encoder(string:str)->str:
 
-        netherlands_alias = [
+        if string is None: return None
+
+        net_alias = [
             "the Netherlands", "The Netherlands", "Nederland"
         ]
 
-        if string is None: return None
-        elif string in netherlands_alias: return "Netherlands"
-        elif "Netherlands" in string: return "Netherlands"
-        else: return string
+        if string in net_alias: return "Netherlands"
+
+        net_locs = [
+            "Netherlands", "Amsterdam", "Vrije Universiteit", "EMGO", "Groningen"
+        ]
+
+        for loc in net_locs:
+            if loc in string: return "Netherlands"
+
+        return string
 
 class UnitedKingdom(BaseEstimator, TransformerMixin):
 
@@ -499,7 +648,7 @@ class UnitedKingdom(BaseEstimator, TransformerMixin):
 
         uk_alias = [
             "United Kingdom", "Manchester", "UNITED KINGDOM", "Wales", "the United Kingdom",
-            "Northern Ireland", "U.K", "United kingdom", "England", "British"
+            "Northern Ireland", "U.K", "United kingdom", "England", "British", "United ingdom"
         ]
 
         if string in uk_alias: return "UK"
@@ -510,7 +659,7 @@ class UnitedKingdom(BaseEstimator, TransformerMixin):
             "Southampton", "Newcastle", "Northern Ireland", "Leeds", "University of Cambridge", "Coventry",
             "Belfast", "Aberdeen", "John Radcliffe Hospital", "Addenbrooke's Hospital", "Botnar Research Centre",
             "N. Ireland", "Nottingham", "Swansea University", "Barts Health NHS", "Devon Partnership NHS",
-            "Loughborough University", "Lancaster University"
+            "Loughborough University", "Lancaster University", "NHS Trust", "University of Exeter"
         ]
 
         for loc in uk_loc:
@@ -554,7 +703,9 @@ class China(BaseEstimator, TransformerMixin):
             "Shandong", "Shandong", "Tianjin", "Shenzhen", "Guangzhou", "Xiangya", "Wuhan", "Shiyan", "Beijing",
             "Jiaotong", "Shanghai", "Zhengzhou", "Qikang", "Jinan", "Chinese Academy", "Jiangsu", "Hongqiao",
             "Dongguan", "Pengzhou", "Dongfang", "Changping", "Chengdu", "Heilongjiang", "Li Ka Shing Faculty",
-            "Liuzhou", "Soochow University", "Suzhou", "Nanchang", "Sun Yat-sen University", "Oujiang"
+            "Liuzhou", "Soochow University", "Suzhou", "Nanchang", "Sun Yat-sen University", "Oujiang",
+            "Liaoning", "Tongxiang", "Shaanxi", "Zhongshan", "Yichang", "Xi'an", "Wannan", "Harbin",
+            "Central South University"
         ]
 
         
@@ -590,7 +741,7 @@ class Australia(BaseEstimator, TransformerMixin):
 
         aus_locs = [
             "Australia", "Queensland", "Melbourne", "Curtin University", "Darlinghurst", "Monash University",
-            "Perth", "Sydney"
+            "Perth", "Sydney", "Australi"
         ]
         
         for loc in aus_locs:
@@ -622,8 +773,22 @@ class Spain(BaseEstimator, TransformerMixin):
     def encoder(string:str)->str:
 
         if string is None: return None
-        elif "Spain" in string: return "Spain"
-        else: return string
+
+        esp_alias = [
+            "España"
+        ]
+
+        if string in esp_alias: return "Spain"
+
+        esp_locs = [
+            "Spain", "Oviedo", "Murcia", "Madrid", "Barcelona", "Asturias", "Ramón y Cajal", "Sevilla",
+            "Bellvitge Biomedical Research Institute"
+        ]
+        
+        for loc in esp_locs:
+            if loc in string: return "Spain"
+
+        return string
 
 class Finland(BaseEstimator, TransformerMixin):
 
@@ -685,7 +850,7 @@ class Germany(BaseEstimator, TransformerMixin):
 
         ger_loc = [
             "Helmholtz", "Munich", "Greifswald", "Essen", "Augsburg", "Berlin", "Freiburg", "Max-Planck",
-            "Germany", "Heidelberg", "Hamburg", "Neuherberg"
+            "Germany", "Heidelberg", "Hamburg", "Neuherberg", "Erlangen"
         ]
 
         for loc in ger_loc:
@@ -859,8 +1024,15 @@ class Greece(BaseEstimator, TransformerMixin):
     def encoder(string:str)->str:
 
         if string is None: return None
-        elif "Greece" in string: return "Greece"
-        else: return string
+
+        gre_locs = [
+            "Greece", "Athens", "Crete"
+        ]
+        
+        for loc in gre_locs:
+            if loc in string: return "Greece"
+
+        return string
 
 class Italy(BaseEstimator, TransformerMixin):
 
@@ -886,8 +1058,24 @@ class Italy(BaseEstimator, TransformerMixin):
     def encoder(string:str)->str:
 
         if string is None: return None
-        elif "Italy" in string: return "Italy"
-        else: return string
+
+        ita_alias = [
+            "ITALY", "Italia", "Itlay"
+        ]
+
+        if string in ita_alias: return "Italy"
+
+        ita_locs = [
+            "Roma", "Italian", "Bergamo", "Bologna", "Bolzano", "Italy", "Cagliari", "Ragusa", "Turin",
+            "Pavia", "Torino", "Milano", "Milan", "Palermo", "Florence", "Fondazione IRCCS", "Garofolo",
+            "Monza", "Naples", "Novara", "Padova", "Parma", "Pisa", "Ravenna", "Rende", "Rieti", "Sardinia",
+            "Sassari", "Verona", "Udine", "Padua"
+        ]
+        
+        for loc in ita_locs:
+            if loc in string: return "Italy"
+
+        return string
 
 class France(BaseEstimator, TransformerMixin):
 
@@ -921,7 +1109,8 @@ class France(BaseEstimator, TransformerMixin):
         if string in france_alias: return "France"
 
         fran_locs = [
-            "Lille", "Nantes", "Dijon", "Paris", "France", "Montpellier", "Bordeaux", "Rennes", "Lyon"
+            "Lille", "Nantes", "Dijon", "Paris", "France", "Montpellier", "Bordeaux", "Rennes", "Lyon",
+            "Créteil", "Inserm Centre de Recherche des Cordeliers", "CNRS", "Toulouse"
         ]
 
         for loc in fran_locs:
@@ -1041,7 +1230,7 @@ class Denmark(BaseEstimator, TransformerMixin):
         if string in den_alias: return "Denmark"
 
         den_locs = [
-            "Denmark", "Aarhus", "Danish"
+            "Denmark", "Aarhus", "Danish", "Rigshospitalet"
         ]
 
         for loc in den_locs:
@@ -1076,7 +1265,7 @@ class Japan(BaseEstimator, TransformerMixin):
 
         jap_loc = [
             "Japan", "Hiroshima", "Kanagawa", "Nagoya", "Osaka", "Saga University", "Otsu", "Fukuoka",
-            "Tokyo"
+            "Tokyo", "Chiba University", "Chiba", "Iwate Medical University", "Tokushima", "Tohoku"
         ]
         for loc in jap_loc:
             if loc in string: return "Japan"
@@ -1213,9 +1402,16 @@ class SouthAfrica(BaseEstimator, TransformerMixin):
 
         if string is None: return None
 
-        saf_loc = [
-            "South Africa"
+        saf_alias = [
+            
         ]
+
+        if string in saf_alias: return "South Africa"
+
+        saf_loc = [
+            "South Africa", "University of  Witwatersrand"
+        ]
+
         for loc in saf_loc:
             if loc in string: return "South Africa"
         
@@ -1247,9 +1443,492 @@ class Taiwan(BaseEstimator, TransformerMixin):
         if string is None: return None
 
         taw_loc = [
-            "Taiwan", "Taipei", "Taoyuan", "Taichung City", "National Yang-Ming University"
+            "Taiwan", "Taipei", "Taoyuan", "Taichung", "National Yang-Ming University", "Changhua City",
+            "Kaohsiung"
         ]
         for loc in taw_loc:
             if loc in string: return "Taiwan"
         
+        return string
+
+class Austria(BaseEstimator, TransformerMixin):
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    def get_feature_names_out(self):
+        pass
+
+    def fit(self, X:pd.DataFrame, y=None):
+        return self
+    
+    def transform(self, X:pd.DataFrame, y=None)->pd.DataFrame:
+
+        X_copy= X.copy()
+        col = X_copy.columns[0]
+
+        X_copy[col] = X_copy[col].apply(lambda x: self.encoder(x))
+
+        return X_copy
+    
+    @staticmethod
+    def encoder(string:str)->str:
+
+        if string is None: return None
+
+        aut_alias = [
+            
+        ]
+
+        if string in aut_alias: return "Austria"
+
+        aut_locs = [
+            "Austria"
+        ]
+
+        for loc in aut_locs:
+            if loc in string: return "Austria"
+
+        return string
+
+class Iceland(BaseEstimator, TransformerMixin):
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    def get_feature_names_out(self):
+        pass
+
+    def fit(self, X:pd.DataFrame, y=None):
+        return self
+    
+    def transform(self, X:pd.DataFrame, y=None)->pd.DataFrame:
+
+        X_copy= X.copy()
+        col = X_copy.columns[0]
+
+        X_copy[col] = X_copy[col].apply(lambda x: self.encoder(x))
+
+        return X_copy
+    
+    @staticmethod
+    def encoder(string:str)->str:
+
+        if string is None: return None
+
+        ice_alias = [
+            
+        ]
+
+        if string in ice_alias: return "Iceland"
+
+        ice_locs = [
+            "Iceland"
+        ]
+
+        for loc in ice_locs:
+            if loc in string: return "Iceland"
+
+        return string
+
+class Israel(BaseEstimator, TransformerMixin):
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    def get_feature_names_out(self):
+        pass
+
+    def fit(self, X:pd.DataFrame, y=None):
+        return self
+    
+    def transform(self, X:pd.DataFrame, y=None)->pd.DataFrame:
+
+        X_copy= X.copy()
+        col = X_copy.columns[0]
+
+        X_copy[col] = X_copy[col].apply(lambda x: self.encoder(x))
+
+        return X_copy
+    
+    @staticmethod
+    def encoder(string:str)->str:
+
+        if string is None: return None
+
+        isr_alias = [
+            
+        ]
+
+        if string in isr_alias: return "Israel"
+
+        isr_locs = [
+            "Israel"
+        ]
+
+        for loc in isr_locs:
+            if loc in string: return "Israel"
+
+        return string
+
+class Poland(BaseEstimator, TransformerMixin):
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    def get_feature_names_out(self):
+        pass
+
+    def fit(self, X:pd.DataFrame, y=None):
+        return self
+    
+    def transform(self, X:pd.DataFrame, y=None)->pd.DataFrame:
+
+        X_copy= X.copy()
+        col = X_copy.columns[0]
+
+        X_copy[col] = X_copy[col].apply(lambda x: self.encoder(x))
+
+        return X_copy
+    
+    @staticmethod
+    def encoder(string:str)->str:
+
+        if string is None: return None
+
+        pol_alias = [
+            "Pol"
+        ]
+
+        if string in pol_alias: return "Poland"
+
+        pol_locs = [
+            "Poland", "Warsaw", "Szczecin", "Łódź", "Lodz"
+        ]
+
+        for loc in pol_locs:
+            if loc in string: return "Poland"
+
+        return string
+
+class Nigeria(BaseEstimator, TransformerMixin):
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    def get_feature_names_out(self):
+        pass
+
+    def fit(self, X:pd.DataFrame, y=None):
+        return self
+    
+    def transform(self, X:pd.DataFrame, y=None)->pd.DataFrame:
+
+        X_copy= X.copy()
+        col = X_copy.columns[0]
+
+        X_copy[col] = X_copy[col].apply(lambda x: self.encoder(x))
+
+        return X_copy
+    
+    @staticmethod
+    def encoder(string:str)->str:
+
+        if string is None: return None
+
+        nig_alias = [
+            
+        ]
+
+        if string in nig_alias: return "Nigeria"
+
+        nig_locs = [
+            "Nigeria", "Lagos", "Abuja"
+        ]
+
+        for loc in nig_locs:
+            if loc in string: return "Nigeria"
+
+        return string
+
+class SouthKorea(BaseEstimator, TransformerMixin):
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    def get_feature_names_out(self):
+        pass
+
+    def fit(self, X:pd.DataFrame, y=None):
+        return self
+    
+    def transform(self, X:pd.DataFrame, y=None)->pd.DataFrame:
+
+        X_copy= X.copy()
+        col = X_copy.columns[0]
+
+        X_copy[col] = X_copy[col].apply(lambda x: self.encoder(x))
+
+        return X_copy
+    
+    @staticmethod
+    def encoder(string:str)->str:
+
+        if string is None: return None
+
+        kor_alias = [
+            "Republic of Korea", "South of Korea"
+        ]
+
+        if string in kor_alias: return "South Korea"
+
+        kor_locs = [
+            "South Korea", "Republic of Korea", "Goyang-si", "Gwangju", "Gwangmyung", "Gyeonggi-do", "Suwon",
+            "Uijeongbu Eulji", "Ulsan", "Daegu", "Daejeon", "Seoul", "Busan", "Cheongju-si", "Chungnam",
+            "Hwasun", "Korea University", "Seongnam"
+        ]
+
+        for loc in kor_locs:
+            if loc in string: return "South Korea"
+
+        return string
+
+class Colombia(BaseEstimator, TransformerMixin):
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    def get_feature_names_out(self):
+        pass
+
+    def fit(self, X:pd.DataFrame, y=None):
+        return self
+    
+    def transform(self, X:pd.DataFrame, y=None)->pd.DataFrame:
+
+        X_copy= X.copy()
+        col = X_copy.columns[0]
+
+        X_copy[col] = X_copy[col].apply(lambda x: self.encoder(x))
+
+        return X_copy
+    
+    @staticmethod
+    def encoder(string:str)->str:
+
+        if string is None: return None
+
+        col_alias = [
+            
+        ]
+
+        if string in col_alias: return "Colombia"
+
+        col_locs = [
+            "Colombia", "Bogotá", "Bogota"
+        ]
+
+        for loc in col_locs:
+            if loc in string: return "Colombia"
+
+        return string
+
+class Czech(BaseEstimator, TransformerMixin):
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    def get_feature_names_out(self):
+        pass
+
+    def fit(self, X:pd.DataFrame, y=None):
+        return self
+    
+    def transform(self, X:pd.DataFrame, y=None)->pd.DataFrame:
+
+        X_copy= X.copy()
+        col = X_copy.columns[0]
+
+        X_copy[col] = X_copy[col].apply(lambda x: self.encoder(x))
+
+        return X_copy
+    
+    @staticmethod
+    def encoder(string:str)->str:
+
+        if string is None: return None
+
+        cz_alias = [
+            "Czech"
+        ]
+
+        if string in cz_alias: return "Czech Republic"
+
+        cz_locs = [
+            "Czech", "Prague"
+        ]
+
+        for loc in cz_locs:
+            if loc in string: return "Czech Republic"
+
+        return string
+
+class Mexico(BaseEstimator, TransformerMixin):
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    def get_feature_names_out(self):
+        pass
+
+    def fit(self, X:pd.DataFrame, y=None):
+        return self
+    
+    def transform(self, X:pd.DataFrame, y=None)->pd.DataFrame:
+
+        X_copy= X.copy()
+        col = X_copy.columns[0]
+
+        X_copy[col] = X_copy[col].apply(lambda x: self.encoder(x))
+
+        return X_copy
+    
+    @staticmethod
+    def encoder(string:str)->str:
+
+        if string is None: return None
+
+        mx_alias = [
+            "México"
+        ]
+
+        if string in mx_alias: return "Mexico"
+
+        mx_locs = [
+            "Mexico", "México"
+        ]
+
+        for loc in mx_locs:
+            if loc in string: return "Mexico"
+
+        return string
+
+class Argentina(BaseEstimator, TransformerMixin):
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    def get_feature_names_out(self):
+        pass
+
+    def fit(self, X:pd.DataFrame, y=None):
+        return self
+    
+    def transform(self, X:pd.DataFrame, y=None)->pd.DataFrame:
+
+        X_copy= X.copy()
+        col = X_copy.columns[0]
+
+        X_copy[col] = X_copy[col].apply(lambda x: self.encoder(x))
+
+        return X_copy
+    
+    @staticmethod
+    def encoder(string:str)->str:
+
+        if string is None: return None
+
+        arg_alias = [
+            
+        ]
+
+        if string in arg_alias: return "Argentina"
+
+        arg_locs = [
+            "Argentina", "Buenos Aires"
+        ]
+
+        for loc in arg_locs:
+            if loc in string: return "Argentina"
+
+        return string
+
+class India(BaseEstimator, TransformerMixin):
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    def get_feature_names_out(self):
+        pass
+
+    def fit(self, X:pd.DataFrame, y=None):
+        return self
+    
+    def transform(self, X:pd.DataFrame, y=None)->pd.DataFrame:
+
+        X_copy= X.copy()
+        col = X_copy.columns[0]
+
+        X_copy[col] = X_copy[col].apply(lambda x: self.encoder(x))
+
+        return X_copy
+    
+    @staticmethod
+    def encoder(string:str)->str:
+
+        if string is None: return None
+
+        ind_alias = [
+            
+        ]
+
+        if string in ind_alias: return "India"
+
+        ind_locs = [
+            "India"
+        ]
+
+        for loc in ind_locs:
+            if loc in string: return "India"
+
+        return string
+    
+class Pakistan(BaseEstimator, TransformerMixin):
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    def get_feature_names_out(self):
+        pass
+
+    def fit(self, X:pd.DataFrame, y=None):
+        return self
+    
+    def transform(self, X:pd.DataFrame, y=None)->pd.DataFrame:
+
+        X_copy= X.copy()
+        col = X_copy.columns[0]
+
+        X_copy[col] = X_copy[col].apply(lambda x: self.encoder(x))
+
+        return X_copy
+    
+    @staticmethod
+    def encoder(string:str)->str:
+
+        if string is None: return None
+
+        pk_alias = [
+            
+        ]
+
+        if string in pk_alias: return "Pakistan"
+
+        pk_locs = [
+            "Pakistan"
+        ]
+
+        for loc in pk_locs:
+            if loc in string: return "Pakistan"
+
         return string
