@@ -688,3 +688,47 @@ class CountrySelector(BaseEstimator, TransformerMixin):
         )
 
         return X_copy
+
+class DepartmentDropper(BaseEstimator, TransformerMixin):
+
+    def __init__(self, sep:str) -> None:
+        super().__init__()
+        self.sep = sep
+
+
+    def get_feature_names_out(self):
+        pass
+
+    def fit(self, X:pd.DataFrame, y=None):
+        return self
+    
+    def transform(self, X:pd.DataFrame, y=None)->pd.DataFrame:
+
+        X_copy= X.copy()
+        col = X_copy.columns[0]
+
+        sep = self.sep
+
+        X_copy[col] = X[col].apply(
+            lambda x: self.dropper(x, sep)
+        )
+
+        return X_copy
+    
+    @staticmethod
+    def dropper(string:str, sep:str)->str:
+
+        if string is None: return None
+
+        splitted_semi = string.split(sep)
+        
+        result = ''
+        
+        for substr in splitted_semi:
+
+            if "Department" !=substr[:10]:
+                result+=(substr+sep)
+
+        if len(result)==0: return ''
+        elif result[-1]==sep: return result[:-1]
+        else: return result
