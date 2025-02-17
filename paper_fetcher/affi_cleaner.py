@@ -732,3 +732,23 @@ class DepartmentDropper(BaseEstimator, TransformerMixin):
         if len(result)==0: return ''
         elif result[-1]==sep: return result[:-1]
         else: return result
+
+class SubstringDropper(BaseEstimator, TransformerMixin):
+
+    def __init__(self, substring: str) -> None:
+        super().__init__()
+        self.substring = substring
+
+    def get_feature_names_out(self):
+        pass
+
+    def fit(self, X: pd.DataFrame, y=None):
+        return self
+    
+    def transform(self, X: pd.DataFrame, y=None) -> pd.DataFrame:
+        X_copy = X.copy()
+        col = X_copy.columns[0]
+        X_copy[col] = X_copy[col].apply(
+            lambda x: None if x is None else x.replace(self.substring, '')
+        )
+        return X_copy
