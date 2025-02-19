@@ -1,19 +1,21 @@
-[tool.poetry]
+[project]
 name = "paper-fetcher"
 version = "0.1.0"
-description = ""
-authors = ["luisggon <luisggon@flyde.io>"]
+description = "library to analyse all papers using UK biobank data"
+authors = [{name="Luis Giraldo González", email="luisggon@protonmail.com"}]
 readme = "README.md"
+requires-python=">=3.12"
+
+dependencies = [
+    "pandas (>=2.2.2, <3.0.0)",
+    "beautifulsoup4 (>=4.12.3, <5.0.0)",
+    "requests (>=2.32.3, <3.0.0)",
+    "jupyter (>=1.0.0, <2.0.0)",
+    "scikit-learn (>=1.5.0, <2.0.0)"
+]
 
 [tool.poetry.dependencies]
-python = "^3.12"
-pandas = "^2.2.2"
-beautifulsoup4 = "^4.12.3"
-requests = "^2.32.3"
-jupyter = "^1.0.0"
-scikit-learn = "^1.5.0"
-
 
 [build-system]
-requires = ["poetry-core"]
+requires = ["poetry-core>=1.5.0"]
 build-backend = "poetry.core.masonry.api"
