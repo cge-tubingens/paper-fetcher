@@ -24,11 +24,12 @@ class Identity(BaseEstimator, TransformerMixin):
     
 class CountryRecoder(BaseEstimator, TransformerMixin):
 
-    def __init__(self, country:str, locus:str, alias:str=[]) -> None:
+    def __init__(self, country_name:str, aliases:list, affi_col:str = 'Affiliations', country_col:str='Country') -> None:
         super().__init__()
-        self.country= country
-        self.locus  = locus
-        self.alias  = alias
+        self.country_name= country_name
+        self.aliases = aliases
+        self.affi_col = affi_col
+        self.country_col = country_col
 
     def get_feature_names_out(self):
         pass
@@ -39,29 +40,26 @@ class CountryRecoder(BaseEstimator, TransformerMixin):
     def transform(self, X:pd.DataFrame, y=None)->pd.DataFrame:
 
         X_copy= X.copy()
-        col = X_copy.columns[0]
 
-        country= self.country
-        locus  = self.locus
-        alias  = self.alias
+        country_name= self.country_name
+        aliases  = self.aliases
+        country_col = self.country_col
+        affi_col = self.affi_col
 
-        X_copy[col] = X_copy[col].apply(
-            lambda x: self.encoder(string=x, alias=alias, locus=locus, country=country)
+        X_copy[country_col] = X_copy.apply(
+            lambda x: self.country_encoder(affiliation=x[affi_col], new_country=country_name, topos=aliases, old_country=x[country_col]), axis=1
         )
 
         return X_copy
     
     @staticmethod
-    def encoder(string:str, alias:list, locus:str, country:str)->str:
+    def country_encoder(affiliation: str, new_country: str, topos: list, old_country:str)-> str:
+    
+        for topo in topos:
+            if topo in affiliation:
+                return new_country
 
-        if string is None: return None
-
-        if string in alias: return country
-
-        for loc in locus:
-            if loc in string: return country
-
-        return string
+        return old_country
 
 class SmallWordsRemover(BaseEstimator, TransformerMixin):
 
